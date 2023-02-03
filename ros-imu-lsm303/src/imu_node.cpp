@@ -106,7 +106,7 @@ void setup_IMU()
   for (int y = 0; y < 6; y++)
     AN_OFFSET[y] = AN_OFFSET[y] / 32;
 
-  AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
+  // AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
 
   timer = ros::Time::now();
   usleep(20000);
