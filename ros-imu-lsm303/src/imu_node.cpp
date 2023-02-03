@@ -122,7 +122,7 @@ int main(int argc, char **argv)
   ros::Publisher imu_pub = node.advertise<sensor_msgs::Imu>("imu", 1000);
   ros::Publisher mag_pub = node.advertise<sensor_msgs::MagneticField>("mag", 1000);
 
-  ros::Rate loop_rate(45);
+  ros::Rate loop_rate(100);
   ROS_INFO("Starting imu advertising, %d", imu_on);
   int counter = 0;
   setup_IMU();
