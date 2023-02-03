@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 
       imu_pub.publish(imu_msg);
 
-      if (counter > 5) // Read compass data at 10Hz... (5 loop runs)
+      if (counter > 10) // Read compass data at 10Hz... (5 loop runs)
       {
         counter = 0;
         Read_Compass();    // Read I2C magnetometer
@@ -162,10 +162,10 @@ int main(int argc, char **argv)
         mag_msg.magnetic_field.z = magnetom_z;
         mag_pub.publish(mag_msg);
       }
-      // Matrix_update();
-      // Normalize();
-      // Drift_correction();
-      // Euler_angles();
+      Matrix_update();
+      Normalize();
+      Drift_correction();
+      Euler_angles();
       // printf ("\033[1Aroll: %.2f \tpitch: %.2f  \tyaw: %.2f\n", roll, pitch, yaw);
     }
 
