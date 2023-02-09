@@ -10,10 +10,16 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   std_msgs
   genmsg
+  computer_vision_msgs
+  opt_flow_msgs
+  camera_info_manager
+  cv_bridge
+  image_transport
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(OpenCV REQUIRED)
 
 # generate_messages(DEPENDENCIES std_msgs)
 #roslaunch_add_file_check(launch)
@@ -41,7 +47,12 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories( include src/IMU src/sys ${catkin_INCLUDE_DIRS})
+include_directories( 
+	include 
+	src/IMU 
+	src/sys 
+	src/CAM
+	${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp library
 add_library(imu		 	src/IMU/Compass.cpp
@@ -51,7 +62,12 @@ add_library(imu		 	src/IMU/Compass.cpp
 				src/IMU/LSM303.cpp
 				src/IMU/Matrix.cpp
 				src/IMU/Vector.cpp)
-target_link_libraries(imu ${catkin_LIBRARIES})
+add_library(cam 
+			src/CAM/config.cpp 
+			src/CAM/v4l2_camera.cpp 
+			src/CAM/v4l2_camera_device.cpp)
+
+target_link_libraries(imu cam ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
 #add_executable(imu_control src/imu_control.cpp src/sys/Timer.cpp src/sys/I2C.cpp)

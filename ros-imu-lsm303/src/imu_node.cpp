@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <unistd.h>
+#include <v4l2_camera.hpp>
 #include "../IMU/L3G.h"
 #include "../IMU/LSM303.h"
 #include "../IMU/IMU.h"
@@ -76,6 +77,7 @@ float errorRollPitch[3] = {0, 0, 0};
 float errorYaw[3] = {0, 0, 0};
 
 unsigned int counter = 0;
+unsigned int counter_cam = 0;
 
 float DCM_Matrix[3][3] = {
     {1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
@@ -111,20 +113,25 @@ void setup_IMU()
   timer = ros::Time::now();
   usleep(20000);
   counter = 0;
+  counter_cam = 0;
 }
 
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "talker");
+  ros::init(argc, argv, "sensors");
   ros::Time::init();
-  ros::NodeHandle node;
+  ros::NodeHandle node("~");
+  // Prepare publisher
   ros::Publisher imu_pub = node.advertise<sensor_msgs::Imu>("imu", 1000);
   ros::Publisher mag_pub = node.advertise<sensor_msgs::MagneticField>("mag", 1000);
+
+  V4L2Camera camera(node);
 
   ros::Rate loop_rate(100);
   ROS_INFO("Starting imu advertising, %d", imu_on);
   int counter = 0;
+  int counter_cam = 0;
   setup_IMU();
   imu_on = true;
   while (ros::ok())
@@ -166,13 +173,21 @@ int main(int argc, char **argv)
       Normalize();
       Drift_correction();
       Euler_angles();
-      // printf ("\033[1Aroll: %.2f \tpitch: %.2f  \tyaw: %.2f\n", roll, pitch, yaw);
+
+      // capture a frame (20Hz)
+      // TODO: make this dependent on FPS
+      if (counter_cam > 5)
+      {
+        camera.capture();
+        counter_cam = 0;
+      }
     }
 
     ros::spinOnce();
 
     loop_rate.sleep();
     ++counter;
+    ++counter_cam;
   }
 
   return 0;

@@ -40,12 +40,23 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>computer_vision_msg</buildtool_depend>
+  <buildtool_depend>opt_flow_msgs</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>genmsg</build_depend>
+  <build_depend>computer_vision_msgs</build_depend>
+  <build_depend>opt_flow_msgs</build_depend>
   <run_depend>roscpp</run_depend>
+
+  <run_depend>computer_vision_msgs</run_depend>
+  <run_depend>opt_flow_msgs</run_depend>
+
+  <build_depend>camera_info_manager</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>image_transport</build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

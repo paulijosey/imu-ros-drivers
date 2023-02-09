@@ -1,0 +1,9 @@
+%YAML:1.0
+
+cam_device: "/dev/video0"
+cam_output_encoding: "mono8"
+cam_pixel_format: "YUYV"
+cam_fps: 15
+cam_height: 640
+cam_width: 480
+cam_frame_id: "of_cam"
