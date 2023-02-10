@@ -50,7 +50,7 @@ V4L2Camera::V4L2Camera(ros::NodeHandle nh)
     return;
   }
 
-  if(!requestOptFlowSettings())
+  if (!requestOptFlowSettings())
   {
     return;
   }
@@ -105,7 +105,7 @@ V4L2Camera::V4L2Camera(ros::NodeHandle nh)
   //         image_pub_.publish(std::move(img));
   //         info_pub_.publish(std::move(ci));
   //         flow_pub_.publish(std::move(flow));
-  //         // delete all data in flow after publish 
+  //         // delete all data in flow after publish
   //         flow.curr_features.data.clear();
   //         flow.prev_features.data.clear();
   //         flow.flows.data.clear();
@@ -126,7 +126,50 @@ V4L2Camera::~V4L2Camera()
 
 void V4L2Camera::capture()
 {
-  // TODO: place single frame capture here
+  opt_flow_msgs::opt_flow flow;
+  // caputre image and optical flow data
+  auto img = camera_->capture(flow);
+  if (img == nullptr)
+  {
+    // Failed capturing image, assume it is temporarily and continue a bit later
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    capture();
+  }
+  else
+  {
+    auto stamp = ros::Time::now();
+    if (img->encoding != OUTPUT_ENCODING)
+    {
+      ROS_WARN_STREAM(
+          "Image encoding not the same as requested output, performing possibly slow conversion: "
+          << img->encoding.c_str() << " " << OUTPUT_ENCODING.c_str());
+      img = convert(*img);
+    }
+
+    // get current CameraInfo data
+    sensor_msgs::CameraInfoPtr
+        ci(new sensor_msgs::CameraInfo(cinfo_->getCameraInfo()));
+
+    if (!checkCameraInfo(*img, *ci))
+    {
+      ci.reset(new sensor_msgs::CameraInfo());
+      ci->height = img->height;
+      ci->width = img->width;
+    }
+
+    ci->header.stamp = stamp;
+
+    ROS_DEBUG_STREAM("Image message address [PUBLISH]:\t" << img.get());
+    image_pub_.publish(std::move(img));
+    info_pub_.publish(std::move(ci));
+    flow_pub_.publish(std::move(flow));
+    // delete all data in flow after publish
+    flow.curr_features.data.clear();
+    flow.prev_features.data.clear();
+    flow.flows.data.clear();
+    flow.hamming_distances.first_score.clear();
+    flow.hamming_distances.second_score.clear();
+  }
 }
 
 bool V4L2Camera::requestPixelFormat(std::string const &fourcc)
@@ -177,18 +220,17 @@ bool V4L2Camera::requestFrameRate(uint const &fps)
 
 bool V4L2Camera::requestOptFlowSettings()
 {
-  return  
-      (camera_->setControlValue("OF/Fast - Min threshold", OF_FAST_MIN_THRESHOLD)) &&
-      (camera_->setControlValue("OF/Fast - Max threshold", OF_FAST_MAX_THRESHOLD)) &&
-      (camera_->setControlValue("OF/Fast - Initial threshold", OF_FAST_INIT_THRESHOLD)) &&
-      (camera_->setControlValue("OF/Fast - Corner values", OF_FAST_CORNER_VALS)) &&
-      (camera_->setControlValue("OF/Spatial Filter - Pts limit", OF_SPATIAL_FILTER_PTS_LIMIT)) &&
-      (camera_->setControlValue("OF/Brief - Max descriptors", OF_BRIEF_MAX_DESC)) &&
-      (camera_->setControlValue("OF/Brief - Target descriptors", OF_BRIEF_TARGET_DESC)) &&
-      (camera_->setControlValue("OF/Hamming - Window Width", OF_HAMMING_WINDOW_WIDTH)) &&
-      (camera_->setControlValue("OF/Hamming - Window Height", OF_HAMMING_WINDOW_HEIGHT)) &&
-      (camera_->setControlValue("OF/Hamming - Matching Threshold", OF_HAMMING_MATCHING_THRESHOLD)) &&
-      (camera_->setControlValue("OF/Hamming - Disparity (FP8.8)", OF_HAMMING_DISPARITY));
+  return (camera_->setControlValue("OF/Fast - Min threshold", OF_FAST_MIN_THRESHOLD)) &&
+         (camera_->setControlValue("OF/Fast - Max threshold", OF_FAST_MAX_THRESHOLD)) &&
+         (camera_->setControlValue("OF/Fast - Initial threshold", OF_FAST_INIT_THRESHOLD)) &&
+         (camera_->setControlValue("OF/Fast - Corner values", OF_FAST_CORNER_VALS)) &&
+         (camera_->setControlValue("OF/Spatial Filter - Pts limit", OF_SPATIAL_FILTER_PTS_LIMIT)) &&
+         (camera_->setControlValue("OF/Brief - Max descriptors", OF_BRIEF_MAX_DESC)) &&
+         (camera_->setControlValue("OF/Brief - Target descriptors", OF_BRIEF_TARGET_DESC)) &&
+         (camera_->setControlValue("OF/Hamming - Window Width", OF_HAMMING_WINDOW_WIDTH)) &&
+         (camera_->setControlValue("OF/Hamming - Window Height", OF_HAMMING_WINDOW_HEIGHT)) &&
+         (camera_->setControlValue("OF/Hamming - Matching Threshold", OF_HAMMING_MATCHING_THRESHOLD)) &&
+         (camera_->setControlValue("OF/Hamming - Disparity (FP8.8)", OF_HAMMING_DISPARITY));
 }
 
 sensor_msgs::Image::ConstPtr V4L2Camera::convert(sensor_msgs::Image const &img) const
