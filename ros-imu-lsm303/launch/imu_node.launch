@@ -1,3 +1,10 @@
 <launch>
-  <node  name="imu_node" pkg="ros-imu-lsm303" type="imu_node" />
+  <env name="ROSCONSOLE_CONFIG_FILE"
+       value="$(find of_cam)/rosconsole/settings.conf"/>
+
+  <arg name="config_path" default = "$(find of_cam)/config/test.yaml" />
+
+  <node  name="imu_node" pkg="ros-imu-lsm303" type="imu_node" output="screen">
+    <param name="config_file" type="string" value="$(arg config_path)" />
+  </node>
 </launch>

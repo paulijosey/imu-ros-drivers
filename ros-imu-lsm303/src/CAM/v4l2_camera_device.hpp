@@ -51,6 +51,7 @@ public:
   int32_t getControlValue(uint32_t id);
   bool setControlValue(uint32_t id, int32_t value);
   bool setControlValue(std::string ctrl_name, int32_t value);
+  double getEpochTimeShift();
 
   // Types used to describe available image sizes
   enum class ImageSizeType
@@ -72,6 +73,7 @@ public:
 
   sensor_msgs::Image::ConstPtr capture();
   sensor_msgs::Image::ConstPtr capture(opt_flow_msgs::opt_flow &flow);
+  double toEpochOffset_s;
 
 private:
   /// Image buffer

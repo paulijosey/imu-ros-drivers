@@ -200,6 +200,20 @@ Image::ConstPtr V4l2CameraDevice::capture()
     return nullptr;
   }
 
+  double temp_s = buf.timestamp.tv_sec + buf.timestamp.tv_usec*1e-6;
+  double epochTimeStamp_s = (temp_s + toEpochOffset_s);
+  double header_s, header_ns;
+  header_ns = modf(epochTimeStamp_s, &header_s);
+  header_ns = header_ns*1e9;
+
+  // Create image object
+  auto img = std::make_unique<Image>();
+  img->width = cur_data_format_.width;
+  img->height = cur_data_format_.height;
+  img->step = cur_data_format_.bytesPerLine;
+  img->header.stamp.sec = header_s;
+  img->header.stamp.nsec = header_ns;
+
   // Requeue buffer to be reused for new captures
   if (-1 == ioctl(fd_, VIDIOC_QBUF, &buf))
   {
@@ -209,11 +223,6 @@ Image::ConstPtr V4l2CameraDevice::capture()
     return nullptr;
   }
 
-  // Create image object
-  auto img = std::make_unique<Image>();
-  img->width = cur_data_format_.width;
-  img->height = cur_data_format_.height;
-  img->step = cur_data_format_.bytesPerLine;
   if (cur_data_format_.pixelFormat == V4L2_PIX_FMT_YUYV)
   {
     img->encoding = sensor_msgs::image_encodings::YUV422;
@@ -239,7 +248,7 @@ Image::ConstPtr V4l2CameraDevice::capture()
   std::copy(buffer.start, buffer.start + img->data.size(), img->data.begin());
 
   // set header info
-  img->header.stamp = ros::Time::now();
+  // img->header.stamp = ros::Time::now();
   img->header.frame_id = FRAME_ID;
   return img;
 }
@@ -386,6 +395,19 @@ bool V4l2CameraDevice::requestDataFormat(const PixelFormat &format)
   ROS_INFO("Success");
   cur_data_format_ = PixelFormat{formatReq.fmt.pix};
   return true;
+}
+
+double V4l2CameraDevice::getEpochTimeShift()
+{
+  struct timeval epochtime;
+  struct timespec vsTime;
+
+  gettimeofday(&epochtime, NULL);
+  clock_gettime(CLOCK_MONOTONIC, &vsTime);
+
+  double uptime_s = vsTime.tv_sec + vsTime.tv_nsec*1e-9;
+  double epoch_s = epochtime.tv_sec + epochtime.tv_usec*1e-6;
+  return epoch_s - uptime_s;
 }
 
 bool V4l2CameraDevice::requestFrameRateFormat(const uint &fps)

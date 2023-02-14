@@ -23,9 +23,12 @@ void Read_Gyro() {
 	AN[0] = gyro.g.x;
 	AN[1] = gyro.g.y;
 	AN[2] = gyro.g.z;
-	gyro_x = SENSOR_SIGN[0] * (AN[0] - AN_OFFSET[0]);
-	gyro_y = SENSOR_SIGN[1] * (AN[1] - AN_OFFSET[1]);
-	gyro_z = SENSOR_SIGN[2] * (AN[2] - AN_OFFSET[2]);
+	// gyro_x = SENSOR_SIGN[0] * (AN[0] - AN_OFFSET[0]);
+	// gyro_y = SENSOR_SIGN[1] * (AN[1] - AN_OFFSET[1]);
+	// gyro_z = SENSOR_SIGN[2] * (AN[2] - AN_OFFSET[2]);
+	gyro_x = SENSOR_SIGN[0] * AN[0];
+	gyro_y = SENSOR_SIGN[1] * AN[1];
+	gyro_z = SENSOR_SIGN[2] * AN[2];
 }
 
 // Reads x,y and z accelerometer registers

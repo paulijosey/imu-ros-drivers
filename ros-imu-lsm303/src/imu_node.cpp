@@ -19,6 +19,7 @@
 #include "../IMU/Compass.h"
 #include "../IMU/DCM.h"
 #include "../sys/Timer.h"
+#include <tf2/LinearMath/Quaternion.h>
 
 #endif
 
@@ -29,7 +30,7 @@
 // Positive pitch : nose up
 // Positive roll : right wing down
 // Positive yaw : clockwise
-int SENSOR_SIGN[9] = {1, 1, 1, -1, -1, -1, 1, 1, 1}; // Correct directions x,y,z - gyro, accelerometer, magnetometer
+// int SENSOR_SIGN[9] = {1, 1, 1, -1, -1, -1, 1, 1, 1}; // Correct directions x,y,z - gyro, accelerometer, magnetometer
 // Uncomment the below line to use this axis definition:
 // X axis pointing forward
 // Y axis pointing to the left
@@ -38,6 +39,7 @@ int SENSOR_SIGN[9] = {1, 1, 1, -1, -1, -1, 1, 1, 1}; // Correct directions x,y,z
 // Positive roll : right wing down
 // Positive yaw : counterclockwise
 // int SENSOR_SIGN[9] = {1,-1,-1,-1,1,1,1,-1,-1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+int SENSOR_SIGN[9] = {1, -1, 1, 1, 1, 1, 1, -1, 1}; // Correct directions x,y,z - gyro, accelerometer, magnetometer
 
 float G_Dt = 0.02; // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
 
@@ -144,8 +146,15 @@ int main(int argc, char **argv)
     {
       Read_Gyro();
       Read_Accel();
-
       imu_msg.header.stamp = ros::Time::now();
+      imu_msg.header.frame_id = 'world';
+      // capture a frame (20Hz)
+      // TODO: make this dependent on FPS
+      if (counter_cam > 4)
+      {
+        camera.capture();
+        counter_cam = 0;
+      }
 
       imu_msg.linear_acceleration.x = ToSi(accel_x); //(float)accel_x / GRAVITY * FREE_ACC;
       imu_msg.linear_acceleration.y = ToSi(accel_y); //(float)accel_y / GRAVITY * FREE_ACC;
@@ -155,32 +164,35 @@ int main(int argc, char **argv)
       imu_msg.angular_velocity.y = Gyro_Scaled_Y(gyro_y);
       imu_msg.angular_velocity.z = Gyro_Scaled_Z(gyro_z);
 
-      imu_pub.publish(imu_msg);
-
-      if (counter > 10) // Read compass data at 10Hz... (5 loop runs)
-      {
-        counter = 0;
-        Read_Compass();    // Read I2C magnetometer
-        Compass_Heading(); // Calculate magnetic heading
-
-        mag_msg.header.stamp = ros::Time::now();
-        mag_msg.magnetic_field.x = magnetom_x;
-        mag_msg.magnetic_field.y = magnetom_y;
-        mag_msg.magnetic_field.z = magnetom_z;
-        mag_pub.publish(mag_msg);
-      }
       Matrix_update();
       Normalize();
       Drift_correction();
       Euler_angles();
+      tf2::Quaternion myQuaternion;
 
-      // capture a frame (20Hz)
-      // TODO: make this dependent on FPS
-      if (counter_cam > 5)
-      {
-        camera.capture();
-        counter_cam = 0;
-      }
+      myQuaternion.setRPY(roll, pitch, yaw);
+
+      myQuaternion = myQuaternion.normalize();
+
+      imu_msg.orientation.x = myQuaternion.x();
+      imu_msg.orientation.y = myQuaternion.y();
+      imu_msg.orientation.z = myQuaternion.z();
+      imu_msg.orientation.w = myQuaternion.w();
+
+      imu_pub.publish(imu_msg);
+
+      // if (counter > 10) // Read compass data at 10Hz... (5 loop runs)
+      // {
+      //   counter = 0;
+      //   Read_Compass();    // Read I2C magnetometer
+      //   Compass_Heading(); // Calculate magnetic heading
+
+      //   mag_msg.header.stamp = ros::Time::now();
+      //   mag_msg.magnetic_field.x = magnetom_x;
+      //   mag_msg.magnetic_field.y = magnetom_y;
+      //   mag_msg.magnetic_field.z = magnetom_z;
+      //   mag_pub.publish(mag_msg);
+      // }
     }
 
     ros::spinOnce();
